@@ -202,13 +202,13 @@
                     for (let i = 0; i < mymusic.length; i++) {
                         let name = mymusic[i]['name']
                         let artist = mymusic[i]['artist']
-                        let img_url = mymusic[i]['url']
+                        let url = mymusic[i]['imgUrl']
                         let like = mymusic[i]['like']
 
                         let temp_html = `<div class="card">
                                             <div class="img_box">
                                                 <img class="card-img-top"
-                                                     src="${img_url}"
+                                                     src="${url}"
                                                      alt="앨범커버이미지">
                                                 <div class="like_box">
                                                     <button onclick="likeMusic('${name}')" class="like"></button>
