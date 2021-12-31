@@ -42,7 +42,7 @@ def like_star():
 
  
 @app.route('/add')
-def home():
+def add():
     #return "this is home"
     return render_template('addMusic.html')
 
