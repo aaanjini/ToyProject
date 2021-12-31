@@ -92,7 +92,7 @@ def write_review():
         'artist': artist
     }
 
-    id = db.music.insert_one(doc).inserted_id
+    id = db.mymusic.insert_one(doc).inserted_id
 
     return jsonify({'msg': '등록됨', 'id': str(id)})
 
@@ -103,7 +103,7 @@ def added_music(id):
         music = ""
         return jsonify({'music': music, 'msg': '보여주기'})
 
-    music_added = db.music.find_one({'_id': ObjectId(id)})
+    music_added = db.mymusic.find_one({'_id': ObjectId(id)})
 
     artist = music_added['artist']
     url = music_added['imgUrl']
