@@ -35,10 +35,10 @@ def show_music():
 @app.route('/api/like', methods=['POST'])
 def like_music():
     name_receive = request.form['name_give']
-
+    
     target_music = db.mymusic.find_one({'name': name_receive})
+    
     current_like = target_music['like']
-
     new_like = current_like + 1
 
     db.mymusic.update_one({'name': name_receive}, {'$set': {'like': new_like}})
@@ -89,7 +89,8 @@ def write_review():
     doc = {
         'imgUrl': imgUrl,
         'name': name,
-        'artist': artist
+        'artist': artist,
+        'like': 0
     }
 
     id = db.mymusic.insert_one(doc).inserted_id
