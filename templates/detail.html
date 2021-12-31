@@ -76,7 +76,7 @@
         .card {
             padding: 30px;
             width: 700px;
-            height: 1000px;
+            height: auto;
             margin: auto auto 30px auto;
             border: 3px solid rgba(0, 0, 0, 0);
             transition: 0.3s;
@@ -142,9 +142,10 @@
         .artist {
             font-size: 0.8rem;
         }
+
         .btn {
             width: 90px;
-            margin: auto 0px auto auto;
+            margin: auto 0px 30px auto;
             display: block;
         }
 
@@ -178,7 +179,7 @@
             right: 40px;
             background-color: white;
             border-radius: 100%;
-            /*background-image: url("../static/plus.png");*/
+            background-image: url("../static/up.png");
             background-size: 90px;
             background-repeat: no-repeat;
             background-position: center;
@@ -202,8 +203,15 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
         }
 
+
+
     </style>
-    <script>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+                showComment();
+            });
+
         function like() {
             alert('좋아요완료')
         }
@@ -215,6 +223,45 @@
         function scrollup() {
             window.scrollTo(0, 0);
         }
+
+        function makeComment() {
+                let nick = $('#nick').val()
+                let comment = $('#comment').val()
+                $.ajax({
+                    type: "POST",
+                    url: "/comment",
+                    data: {nick_give:nick,comment_give:comment},
+                    success: function (response) {
+                        alert(response["msg"]);
+                        window.location.reload();
+                    }
+                })
+            }
+
+
+        function showComment() {
+                $.ajax({
+                    type: "GET",
+                    url: "/comment",
+                    data: {},
+                    success: function (response) {
+                        let comments = response['all_comments']
+                        for (i = 0; i < comments.length; i++){
+                            let nick = comments[i]['nick']
+                            let comment = comments[i]['comment']
+
+                            let temp_html = `<tr>
+                                                <td>${nick}</td>
+                                                <td>${comment}</td>
+                                            </tr>`
+                            $('#comments-box').append(temp_html)
+                        }
+                    }
+                })
+            }
+
+
+
     </script>
 
 </head>
@@ -223,7 +270,7 @@
 <div class="wrap">
     <div class="title_box">
         <!--타이틀 클릭시 메인화면으로 이동-->
-        <a href="index.html"><h1 class="title">캐롤발굴:<span>캐발☃</span></h1></a>
+        <a href="/"><h1 class="title">캐롤발굴:<span>캐발☃</span></h1></a>
     </div>
     <div class="card">
         <div class="img_box">
@@ -239,30 +286,33 @@
             <a href="" class="card-title music_title">All I Want for Christmas Is You</a>
             <h5 class="artist">Mariah Carey</h5>
             <div class="input-group mb-3">
-                <input type="text" class="form-control" placeholder="닉네임" aria-label="Username"
+                <input id="nick" type="text" class="form-control" placeholder="닉네임" aria-label="Username"
                        aria-describedby="basic-addon1">
             </div>
             <div class="input-group mb-3">
-                <input type="text" class="form-control" placeholder="댓글" aria-label="Username"
+                <input id="comment" type="text" class="form-control" placeholder="댓글" aria-label="Username"
                        aria-describedby="basic-addon1">
             </div>
-            <button type="button" class="btn text-white" style="background-color: #003e19;">댓글 등록</button>
-
-            <div class="comment_box">
-                <p class="card-text"><small class="nickname">홍길동</small><small
-                        class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
-                <p class="card-text"><small class="nickname">홍길동</small><small
-                        class="text-muted comment ellipsis">이 노래 진짜 좋아요!길어진다면 길어진다며 길어진다면?길다긹어길다길fdgsdfgdfgsdfgsdfgsdfgdsfgsdfgsdfgsdgdsfgdfgsdgdsfgsdgsdgdsfg 어길어길어</small>
-                </p>
-                <p class="card-text"><small class="nickname">홍길동</small><small
-                        class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
+            <button onclick="makeComment()" type="button" class="btn text-white" style="background-color: #003e19;">댓글 등록</button>
+            <div class="comments">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th scope="col">닉네임</th>
+                        <th scope="col">댓글</th>
+                    </tr>
+                    </thead>
+                    <tbody id="comments-box"/>
+                </table>
             </div>
+
+
         </div>
     </div>
     <div onclick="scrollup()" class="scroll_btn">
 
     </div>
-    <div onclick="popup()" class="popup_btn"></div>
+    <button onclick="location.href ='popup.html'" type="button" class="popup_btn"></button>
 </div>
 </body>
 
