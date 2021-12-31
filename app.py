@@ -88,7 +88,8 @@ def write_review():
     doc = {
         'imgUrl':imgUrl,
         'name':name,
-        'artist':artist
+        'artist':artist,
+        'like':0
     }
 
     id = db.mymusic.insert_one(doc).inserted_id
