@@ -36,9 +36,10 @@
         body {
             background-color: #003e19;
         }
+
         /*a태그 마우스오버시 밑줄 없애기*/
         a:hover {
-            text-decoration:none
+            text-decoration: none
         }
 
         /*말줄임 class*/
@@ -101,12 +102,14 @@
         .img_box {
             position: relative;
         }
+
         .like_box {
             width: 40px;
             position: absolute;
             bottom: 10px;
             right: 10px;
         }
+
         .like {
             width: 40px;
             height: 40px;
@@ -119,11 +122,14 @@
             box-shadow: 0px 0px 5px rgb(0 0 0 / 30%);
             cursor: pointer;
         }
+
         .like_count {
             text-align: center;
             font-size: 13px;
             color: #212529;
             margin-bottom: 0;
+            /*좋아요숫자가 잘안보여서 그림자 추가함*/
+            text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
         }
 
         .music_title {
@@ -170,16 +176,80 @@
             background-repeat: no-repeat;
             background-position: center;
             cursor: pointer;
-            box-shadow: 0 0 10px rgba(0,0,0,0.4);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
         }
     </style>
     <script>
-        function like() {
-            alert('좋아요완료')
+        // function like() {
+        //     alert('좋아요완료')
+        // }
+        //
+        // function popup() {
+        //     alert('팝업이뜹니다요')
+        // }
+
+        $(document).ready(function () {
+            showMusic();
+        });
+
+        function showMusic() {
+            $.ajax({
+                type: 'GET',
+                url: '/api/list?sample_give=샘플데이터',
+                data: {},
+                success: function (response) {
+                    let mymusic = response['musics']
+                    for (let i = 0; i < mymusic.length; i++) {
+                        let name = mymusic[i]['name']
+                        let artist = mymusic[i]['artist']
+                        let img_url = mymusic[i]['url']
+                        let like = mymusic[i]['like']
+
+                        let temp_html = `<div class="card">
+                                            <div class="img_box">
+                                                <img class="card-img-top"
+                                                     src="${img_url}"
+                                                     alt="앨범커버이미지">
+                                                <div class="like_box">
+                                                    <button onclick="likeMusic('${name}')" class="like"></button>
+                                                    <p class="like_count">${like}</p>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <a target="" href="./detail.html" class="card-title music_title">${name}</a>
+                                                <h5 class="artist">${artist}</h5>
+                                                <div class="comment_box">
+                                                    <p class="card-text"><small class="nickname">홍길동</small><small
+                                                            class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
+                                                    <p class="card-text"><small class="nickname">홍길동</small><small
+                                                            class="text-muted comment ellipsis">이 노래 진짜 좋아요!길어진다면 길어진다며 길어진다면?길다긹어길다길어길어길어</small>
+                                                    </p>
+                                                    <p class="card-text"><small class="nickname">홍길동</small><small
+                                                            class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
+                                                </div>
+                                            </div>
+                                        </div>`
+                        $('#music_box').append(temp_html);
+
+                    }
+                }
+            });
         }
-        function popup() {
-            alert('팝업이뜹니다요')
+
+
+        function likeMusic(name) {
+            $.ajax({
+                type: 'POST',
+                url: '/api/like',
+                data: {name_give: name},
+                success: function (response) {
+                    alert(response['msg']);
+                    window.location.reload();
+                }
+            });
         }
+
+
     </script>
 
 </head>
@@ -188,134 +258,41 @@
 <div class="wrap">
     <div class="title_box">
         <!--타이틀 클릭시 메인화면으로 이동-->
-        <a href=""><h1 class="title">캐롤발굴:<span>캐발☃</span></h1></a>
+        <a href="./"><h1 class="title">캐롤발굴:<span>캐발☃</span></h1></a>
     </div>
     <div class="cards_box">
-        <div class="card-deck">
-            <div class="card">
-                <div class="img_box">
-                    <img class="card-img-top"
-                         src="https://img.huffingtonpost.com/asset/5df82b7a240000c80c5a37c6.webp?cache=bU97Dqfxpt&ops=scalefit_630_noupscale"
-                         alt="앨범커버이미지">
-                    <div class="like_box">
-                        <button onclick="like()" class="like" ></button>
-                        <p class="like_count">123</p>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <a href="" class="card-title music_title">All I Want for Christmas Is You</a>
-                    <h5 class="artist">Mariah Carey</h5>
-                    <div class="comment_box">
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!길어진다면 길어진다며 길어진다면?길다긹어길다길어길어길어</small>
-                        </p>
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="img_box">
-                    <img class="card-img-top"
-                         src="https://img.huffingtonpost.com/asset/5df82b7a240000c80c5a37c6.webp?cache=bU97Dqfxpt&ops=scalefit_630_noupscale"
-                         alt="앨범커버이미지">
-                    <div class="like_box">
-                        <button onclick="like()" class="like" ></button>
-                        <p class="like_count">123</p>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <a href="" class="card-title music_title">All I Want for Christmas Is You</a>
-                    <h5 class="artist">Mariah Carey</h5>
-                    <div class="comment_box">
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!길어진다면 길어진다며 길어진다면?길다긹어길다길어길어길어</small>
-                        </p>
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="img_box">
-                    <img class="card-img-top"
-                         src="https://img.huffingtonpost.com/asset/5df82b7a240000c80c5a37c6.webp?cache=bU97Dqfxpt&ops=scalefit_630_noupscale"
-                         alt="앨범커버이미지">
-                    <div class="like_box">
-                        <button onclick="like()" class="like" ></button>
-                        <p class="like_count">123</p>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <a href="" class="card-title music_title">All I Want for Christmas Is You</a>
-                    <h5 class="artist">Mariah Carey</h5>
-                    <div class="comment_box">
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!길어진다면 길어진다며 길어진다면?길다긹어길다길어길어길어</small>
-                        </p>
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="img_box">
-                    <img class="card-img-top"
-                         src="https://img.huffingtonpost.com/asset/5df82b7a240000c80c5a37c6.webp?cache=bU97Dqfxpt&ops=scalefit_630_noupscale"
-                         alt="앨범커버이미지">
-                    <div class="like_box">
-                        <button onclick="like()" class="like" ></button>
-                        <p class="like_count">123</p>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <a href="" class="card-title music_title">All I Want for Christmas Is You</a>
-                    <h5 class="artist">Mariah Carey</h5>
-                    <div class="comment_box">
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!길어진다면 길어진다며 길어진다면?길다긹어길다길어길어길어</small>
-                        </p>
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="img_box">
-                    <img class="card-img-top"
-                         src="https://img.huffingtonpost.com/asset/5df82b7a240000c80c5a37c6.webp?cache=bU97Dqfxpt&ops=scalefit_630_noupscale"
-                         alt="앨범커버이미지">
-                    <div class="like_box">
-                        <button onclick="like()" class="like" ></button>
-                        <p class="like_count">123</p>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <a href="" class="card-title music_title">All I Want for Christmas Is You</a>
-                    <h5 class="artist">Mariah Carey</h5>
-                    <div class="comment_box">
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!길어진다면 길어진다며 길어진다면?길다긹어길다길어길어길어</small>
-                        </p>
-                        <p class="card-text"><small class="nickname">홍길동</small><small
-                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>
-                    </div>
-                </div>
-            </div>
+        <!--    card-deck에 id(music_box)추가함    -->
+        <div class="card-deck" id="music_box">
+<!--            <div class="card">-->
+<!--                <div class="img_box">-->
+<!--                    <img class="card-img-top"-->
+<!--                         src="https://img.huffingtonpost.com/asset/5df82b7a240000c80c5a37c6.webp?cache=bU97Dqfxpt&ops=scalefit_630_noupscale"-->
+<!--                         alt="앨범커버이미지">-->
+<!--                    <div class="like_box">-->
+<!--                        <button onclick="like()" class="like"></button>-->
+<!--                        <p class="like_count">123</p>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <div class="card-body">-->
+<!--                    <a href="./detail.html" class="card-title music_title">All I Want for Christmas Is You</a>-->
+<!--                    <h5 class="artist">Mariah Carey</h5>-->
+<!--                    <div class="comment_box">-->
+<!--                        <p class="card-text"><small class="nickname">홍길동</small><small-->
+<!--                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>-->
+<!--                        <p class="card-text"><small class="nickname">홍길동</small><small-->
+<!--                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!길어진다면 길어진다며 길어진다면?길다긹어길다길어길어길어</small>-->
+<!--                        </p>-->
+<!--                        <p class="card-text"><small class="nickname">홍길동</small><small-->
+<!--                                class="text-muted comment ellipsis">이 노래 진짜 좋아요!</small></p>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
 
         </div>
     </div>
-    <div onclick="popup()" class="popup_btn"></div>
+    <!-- popup 버튼 a 태그로 수정함   -->
+    <a href="" class="popup_btn"></a>
+<!--    <div onclick="popup()" class="popup_btn"></div>-->
 </div>
 </body>
 
