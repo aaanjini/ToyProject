@@ -19,7 +19,7 @@ function showMusic(id){
         url:"/add/music/" + id,
         data:{},
         success: function(response){          
-            let img_url = response['url'];
+            let img_url = response['imgUrl'];
             let name = response['name'];
             let artist = response['artist'];
             let temp_html = `<div class="card">

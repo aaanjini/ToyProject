@@ -1,0 +1,311 @@
+Index: app.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\nfrom pymongo import MongoClient\n\nfrom flask import Flask, render_template, jsonify, request\n\n\nimport requests\nfrom bs4 import BeautifulSoup\nfrom bson.objectid import ObjectId\napp = Flask(__name__)\n\nclient = MongoClient('localhost', 27017)\ndb = client.dbsparta\n\n\n# HTML 화면 보여주기\n@app.route('/')\ndef home():\n    return render_template('index.html')\n\n# dtail 화면 보여주기\n@app.route('/detail.html')\ndef detail():\n    return render_template('detail.html')\n\n\n# API 역할을 하는 부분\n@app.route('/api/list', methods=['GET'])\ndef show_music():\n    music = list(db.mymusic.find({}, {'_id': False}).sort('like',-1))\n    return jsonify({'musics': music })\n\n\n@app.route('/api/like', methods=['POST'])\ndef like_star():\n    name_receive = request.form['name_give']\n\n    target_music = db.mymusic.find_one({'name': name_receive})\n    current_like = target_music['like']\n\n    new_like = current_like + 1\n\n    db.mymusic.update_one({'name': name_receive}, {'$set': {'like': new_like}})\n\n    return jsonify({'msg': '좋아요 완료!'})\n\n# 댓글 저장\n@app.route('/comment', methods=['POST'])\ndef make_comment():\n    nick_receive = request.form['nick_give']\n    comment_receive = request.form['comment_give']\n\n    doc = {'nick': nick_receive,\n           'comment': comment_receive,\n           }\n    db.toy_comment.insert_one(doc)\n\n    return jsonify({'msg': '댓글 등록 완료!'})\n\n\n# 댓글 보기\n@app.route('/comment', methods=['GET'])\ndef read_comment():\n    comments = list(db.toy_comment.find({}, {'_id': False}))\n    return jsonify({'all_comments': comments})\n\n\n \n@app.route('/add')\ndef add():\n    #return \"this is home\"\n    return render_template('addMusic.html')\n\n\n#api\n@app.route('/add/music', methods=['POST'])\ndef write_review():\n    musicUrl = request.form['musicUrl']\n    \n    headers = {\n        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36'}\n    r = requests.get(musicUrl, headers=headers).text\n    soup = BeautifulSoup(r, 'html.parser')\n\n    imgUrl = soup.select('.song-main-infos .photo-zone a')[0]['href']\n    name = soup.select('.song-main-infos .info-zone h2')[0].text.strip()\n    artist = soup.select('.song-main-infos .info-zone ul li .value')[0].text\n    doc = {\n        'imgUrl':imgUrl,\n        'name':name,\n        'artist':artist\n    }\n\n    id = db.mymusic.insert_one(doc).inserted_id\n\n    return jsonify({'msg':'등록됨', 'id':str(id)})\n\n\n\n@app.route('/add/music/<id>', methods=['GET'])\ndef added_music(id):\n\n    if id == \"undefined\":\n        music = \"\"\n        return jsonify({'music':music, 'msg':'보여주기'})\n \n\n    music_added = db.mymusic.find_one({'_id':ObjectId(id)})\n\n    artist = music_added['artist']\n    url = music_added['imgUrl']\n    name = music_added['name']\n \n    return jsonify({\"artist\":artist, 'url':url, 'name':name ,'msg':'보여주기'})\n\n  \n  \nif __name__ == '__main__':\n    app.run('0.0.0.0', port=5001, debug=True)\n\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app.py b/app.py
+--- a/app.py	(revision 01e81b5c659a942e936dff0dfe0c3aa202025554)
++++ b/app.py	(date 1640943041645)
+@@ -23,12 +23,18 @@
+ def detail():
+     return render_template('detail.html')
+ 
++#등록 화면 보여주기
++@app.route('/add')
++def add():
++    #return "this is home"
++    return render_template('addMusic.html')
++
+ 
+ # API 역할을 하는 부분
+ @app.route('/api/list', methods=['GET'])
+ def show_music():
+     music = list(db.mymusic.find({}, {'_id': False}).sort('like',-1))
+-    return jsonify({'musics': music })
++    return jsonify({'musics': music})
+ 
+ 
+ @app.route('/api/like', methods=['POST'])
+@@ -65,13 +71,7 @@
+     return jsonify({'all_comments': comments})
+ 
+ 
+- 
+-@app.route('/add')
+-def add():
+-    #return "this is home"
+-    return render_template('addMusic.html')
+ 
+-
+ #api
+ @app.route('/add/music', methods=['POST'])
+ def write_review():
+Index: templates/addMusic.html
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><!DOCTYPE html>\n<html lang=\"ko\">\n    <head>\n        <meta charset=\"UTF-8\"/>\n        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/>\n        <title>음악 등록</title>\n        <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js\"></script>\n        <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css\"/>\n        <link rel=\"stylesheet\" type=\"text/css\" href=\"../static/css/music.css\">\n        <!-- JS -->\n        <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js\"></script>\n        <script src=\"https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js\"\n                integrity=\"sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q\"\n                crossorigin=\"anonymous\"></script>\n\n        <!-- 구글폰트 -->\n        <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n        <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n        <link href=\"https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap\" rel=\"stylesheet\">\n        <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n        <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n        <link href=\"https://fonts.googleapis.com/css2?family=Sunflower:wght@300;500;700&display=swap\" rel=\"stylesheet\">\n        <script defer src=\"https://use.fontawesome.com/releases/v5.3.1/js/all.js\"></script>\n        <style>\n            .center {\n                text-align: center;\n            }\n            .wrap {\n                width: 300px;\n                margin: auto;\n            }\n\n            .music-list {\n                width: 500px;\n                margin: 20px auto 0 auto;\n            }\n\n            .star-name {\n                display: inline-block;\n            }\n\n            .star-name:hover {\n                text-decoration: underline;\n            }\n\n            .card {\n                margin-bottom: 15px;\n            }\n            * {\n            font-family: 'Sunflower', sans-serif;\n            }\n\n            body {\n                background-color: #003e19;\n            }\n            /*a태그 마우스오버시 밑줄 없애기*/\n            a:hover {\n                text-decoration:none\n            }\n\n            /*말줄임 class*/\n            .ellipsis {\n                width: 75%;\n                white-space: nowrap;\n                overflow: hidden;\n                text-overflow: ellipsis; /* 말줄임 적용 */\n                vertical-align: bottom;\n                display: inline-block;\n            }\n\n            .title_box {\n                padding: 50px 30px;\n            }\n\n            .title {\n                font-family: 'Do Hyeon', sans-serif;\n                font-size: 35px;\n                text-align: center;\n                color: white;\n                cursor: pointer;\n            }\n\n            .title span {\n                font-size: 38px;\n            }\n\n            .cards_box {\n                padding: 30px;\n\n            }\n\n            .cards_box .card {\n                border: 3px solid rgba(0, 0, 0, 0);\n                transition: 0.3s;\n            }\n\n            /*card에 마우스 올리면 border로 선택한 카드 표시*/\n            .cards_box .card:hover {\n                border: 3px solid rgba(163, 4, 4, 1);\n                transition: 0.3s;\n            }\n\n            .card-deck {\n                display: block;\n            }\n\n            .card-deck .card {\n                display: inline-block;\n                width: calc(25% - 33px);\n                padding: 10px;\n                margin-bottom: 30px;\n            }\n\n            .card-body {\n                padding: 20px 15px 10px;\n            }\n\n            .img_box {\n                position: relative;\n            }\n            .like_box {\n                width: 40px;\n                position: absolute;\n                bottom: 10px;\n                right: 10px;\n            }\n            .like {\n                width: 40px;\n                height: 40px;\n                background-image: url(../static/on_heart.png);\n                background-size: 35px;\n                background-color: white;\n                border: none;\n                border-radius: 50%;\n                background-position: bottom;\n                box-shadow: 0px 0px 5px rgb(0 0 0 / 30%);\n                cursor: pointer;\n            }\n            .like_count {\n                text-align: center;\n                font-size: 13px;\n                color: #212529;\n                margin-bottom: 0;\n            }\n\n            .music_title {\n                font-size: 1rem;\n                color: #212529;\n            }\n\n            .artist {\n                font-size: 0.8rem;\n            }\n\n            .comment_box {\n                margin-top: 20px;\n                border-top: 1px solid gray;\n                padding: 20px 0 0;\n            }\n\n            .comment_box .card-text {\n                margin-bottom: 5px;\n            }\n\n            .comment_box .card-text:nth-child(n+2) {\n                margin-bottom: 0;\n            }\n\n            .comment_box .card-text:nth-child(n+3) {\n                display: none;\n            }\n        </style>\n        <script src=\"../static/js/add.js\">\n        </script>\n    </head>\n    <body>\n\n        <div class=\"title_box\">\n            <!--타이틀 클릭시 메인화면으로 이동-->\n            <a href=\"\"><h1 class=\"title\">캐롤:<span>캐롤 등록하세요☃</span></h1></a>\n        </div>\n        <div class=\"wrap\">\n            <div class=\"input-group mb-3\">\n                <div class=\"input-group-prepend\">\n                    <span class=\"input-group-text\">URL</span>\n                </div>\n                <input id=\"music-url\" type=\"text\" class=\"form-control\" aria-label=\"Default\"\n                    aria-describedby=\"inputGroup-sizing-default\">\n            </div>\n            <button onclick=\"addMusic()\" type=\"button\" class=\"btn btn-primary btn-order\">등록하기</button>\n        </div>\n        <div class=\"music-list\" id=\"music-box\">\n            \n        </div>\n    </body>\n</html>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/templates/addMusic.html b/templates/addMusic.html
+--- a/templates/addMusic.html	(revision 01e81b5c659a942e936dff0dfe0c3aa202025554)
++++ b/templates/addMusic.html	(date 1640941981456)
+@@ -177,7 +177,7 @@
+ 
+         <div class="title_box">
+             <!--타이틀 클릭시 메인화면으로 이동-->
+-            <a href=""><h1 class="title">캐롤:<span>캐롤 등록하세요☃</span></h1></a>
++            <a href="/"><h1 class="title">캐롤:<span>캐롤 등록하세요☃</span></h1></a>
+         </div>
+         <div class="wrap">
+             <div class="input-group mb-3">
+Index: templates/index.html
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><!Doctype html>\n<html lang=\"ko\">\n\n<head>\n    <!-- Required meta tags -->\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\">\n\n    <!-- Bootstrap CSS -->\n    <link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css\"\n          integrity=\"sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm\"\n          crossorigin=\"anonymous\">\n\n    <!-- JS -->\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js\"></script>\n    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js\"\n            integrity=\"sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q\"\n            crossorigin=\"anonymous\"></script>\n\n    <!-- 구글폰트 -->\n    <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n    <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n    <link href=\"https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap\" rel=\"stylesheet\">\n    <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n    <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n    <link href=\"https://fonts.googleapis.com/css2?family=Sunflower:wght@300;500;700&display=swap\" rel=\"stylesheet\">\n\n    <title>캐롤발굴:캐발</title>\n\n    <!-- style -->\n    <style type=\"text/css\">\n        * {\n            font-family: 'Sunflower', sans-serif;\n        }\n\n        body {\n            background-color: #003e19;\n        }\n\n        /*a태그 마우스오버시 밑줄 없애기*/\n        a:hover {\n            text-decoration: none\n        }\n\n        /*말줄임 class*/\n        .ellipsis {\n            width: 75%;\n            white-space: nowrap;\n            overflow: hidden;\n            text-overflow: ellipsis; /* 말줄임 적용 */\n            vertical-align: bottom;\n            display: inline-block;\n        }\n\n        .title_box {\n            padding: 50px 30px;\n        }\n\n        .title {\n            font-family: 'Do Hyeon', sans-serif;\n            font-size: 35px;\n            text-align: center;\n            color: white;\n            cursor: pointer;\n        }\n\n        .title span {\n            font-size: 38px;\n        }\n\n        .cards_box {\n            padding: 30px;\n\n        }\n\n        .cards_box .card {\n            border: 3px solid rgba(0, 0, 0, 0);\n            transition: 0.3s;\n        }\n\n        /*card에 마우스 올리면 border로 선택한 카드 표시*/\n        .cards_box .card:hover {\n            border: 3px solid rgba(163, 4, 4, 1);\n            transition: 0.3s;\n        }\n\n        .card-deck {\n            display: block;\n        }\n\n        .card-deck .card {\n            display: inline-block;\n            width: calc(25% - 33px);\n            padding: 10px;\n            margin-bottom: 30px;\n        }\n\n        .card-body {\n            padding: 20px 15px 10px;\n        }\n\n        .img_box {\n            position: relative;\n        }\n\n        .like_box {\n            width: 40px;\n            position: absolute;\n            bottom: 10px;\n            right: 10px;\n        }\n\n        .like {\n            width: 40px;\n            height: 40px;\n            background-image: url(../static/on_heart.png);\n            background-size: 35px;\n            background-color: white;\n            border: none;\n            border-radius: 50%;\n            background-position: bottom;\n            box-shadow: 0px 0px 5px rgb(0 0 0 / 30%);\n            cursor: pointer;\n        }\n\n        .like_count {\n            text-align: center;\n            font-size: 13px;\n            color: #212529;\n            margin-bottom: 0;\n            /*좋아요숫자가 잘안보여서 그림자 추가함*/\n            text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;\n        }\n\n        .music_title {\n            font-size: 1rem;\n            color: #212529;\n        }\n\n        .artist {\n            font-size: 0.8rem;\n        }\n\n        .comment_box {\n            margin-top: 20px;\n            border-top: 1px solid gray;\n            padding: 20px 0 0;\n        }\n\n        .comment_box .card-text {\n            margin-bottom: 5px;\n        }\n\n        .comment_box .card-text:nth-child(n+2) {\n            margin-bottom: 0;\n        }\n\n        .comment_box .card-text:nth-child(n+3) {\n            display: none;\n        }\n\n        .nickname {\n            margin-right: 10px;\n        }\n\n        .popup_btn {\n            width: 100px;\n            height: 100px;\n            position: fixed;\n            bottom: 40px;\n            right: 40px;\n            background-color: white;\n            border-radius: 100%;\n            background-image: url(\"../static/plus.png\");\n            background-size: 90px;\n            background-repeat: no-repeat;\n            background-position: center;\n            cursor: pointer;\n            box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);\n        }\n    </style>\n    <script>\n        // function like() {\n        //     alert('좋아요완료')\n        // }\n        //\n        // function popup() {\n        //     alert('팝업이뜹니다요')\n        // }\n\n        $(document).ready(function () {\n            showMusic();\n        });\n\n        function showMusic() {\n            $.ajax({\n                type: 'GET',\n                url: '/api/list?sample_give=샘플데이터',\n                data: {},\n                success: function (response) {\n                    let mymusic = response['musics']\n                    for (let i = 0; i < mymusic.length; i++) {\n                        let name = mymusic[i]['name']\n                        let artist = mymusic[i]['artist']\n                        let url = mymusic[i]['imgUrl']\n                        let like = mymusic[i]['like']\n\n                        let temp_html = `<div class=\"card\">\n                                            <div class=\"img_box\">\n                                                <img class=\"card-img-top\"\n                                                     src=\"${url}\"\n                                                     alt=\"앨범커버이미지\">\n                                                <div class=\"like_box\">\n                                                    <button onclick=\"likeMusic('${name}')\" class=\"like\"></button>\n                                                    <p class=\"like_count\">${like}</p>\n                                                </div>\n                                            </div>\n                                            <div class=\"card-body\">\n                                                <a target=\"\" href=\"./detail.html\" class=\"card-title music_title\">${name}</a>\n                                                <h5 class=\"artist\">${artist}</h5>\n                                                <div class=\"comment_box\">\n                                                    <p class=\"card-text\"><small class=\"nickname\">홍길동</small><small\n                                                            class=\"text-muted comment ellipsis\">이 노래 진짜 좋아요!</small></p>\n                                                    <p class=\"card-text\"><small class=\"nickname\">홍길동</small><small\n                                                            class=\"text-muted comment ellipsis\">이 노래 진짜 좋아요!길어진다면 길어진다며 길어진다면?길다긹어길다길어길어길어</small>\n                                                    </p>\n                                                    <p class=\"card-text\"><small class=\"nickname\">홍길동</small><small\n                                                            class=\"text-muted comment ellipsis\">이 노래 진짜 좋아요!</small></p>\n                                                </div>\n                                            </div>\n                                        </div>`\n                        $('#music_box').append(temp_html);\n\n                    }\n                }\n            });\n        }\n\n\n        function likeMusic(name) {\n            $.ajax({\n                type: 'POST',\n                url: '/api/like',\n                data: {name_give: name},\n                success: function (response) {\n                    alert(response['msg']);\n                    window.location.reload();\n                }\n            });\n        }\n\n\n    </script>\n\n</head>\n\n<body>\n<div class=\"wrap\">\n    <div class=\"title_box\">\n        <!--타이틀 클릭시 메인화면으로 이동-->\n        <a href=\"./\"><h1 class=\"title\">캐롤발굴:<span>캐발☃</span></h1></a>\n    </div>\n    <div class=\"cards_box\">\n        <!--    card-deck에 id(music_box)추가함    -->\n        <div class=\"card-deck\" id=\"music_box\">\n<!--            <div class=\"card\">-->\n<!--                <div class=\"img_box\">-->\n<!--                    <img class=\"card-img-top\"-->\n<!--                         src=\"https://img.huffingtonpost.com/asset/5df82b7a240000c80c5a37c6.webp?cache=bU97Dqfxpt&ops=scalefit_630_noupscale\"-->\n<!--                         alt=\"앨범커버이미지\">-->\n<!--                    <div class=\"like_box\">-->\n<!--                        <button onclick=\"like()\" class=\"like\"></button>-->\n<!--                        <p class=\"like_count\">123</p>-->\n<!--                    </div>-->\n<!--                </div>-->\n<!--                <div class=\"card-body\">-->\n<!--                    <a href=\"./detail.html\" class=\"card-title music_title\">All I Want for Christmas Is You</a>-->\n<!--                    <h5 class=\"artist\">Mariah Carey</h5>-->\n<!--                    <div class=\"comment_box\">-->\n<!--                        <p class=\"card-text\"><small class=\"nickname\">홍길동</small><small-->\n<!--                                class=\"text-muted comment ellipsis\">이 노래 진짜 좋아요!</small></p>-->\n<!--                        <p class=\"card-text\"><small class=\"nickname\">홍길동</small><small-->\n<!--                                class=\"text-muted comment ellipsis\">이 노래 진짜 좋아요!길어진다면 길어진다며 길어진다면?길다긹어길다길어길어길어</small>-->\n<!--                        </p>-->\n<!--                        <p class=\"card-text\"><small class=\"nickname\">홍길동</small><small-->\n<!--                                class=\"text-muted comment ellipsis\">이 노래 진짜 좋아요!</small></p>-->\n<!--                    </div>-->\n<!--                </div>-->\n<!--            </div>-->\n\n        </div>\n    </div>\n    <!-- popup 버튼 a 태그로 수정함   -->\n    <a href=\"\" class=\"popup_btn\"></a>\n<!--    <div onclick=\"popup()\" class=\"popup_btn\"></div>-->\n</div>\n</body>\n\n</html>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/templates/index.html b/templates/index.html
+--- a/templates/index.html	(revision 01e81b5c659a942e936dff0dfe0c3aa202025554)
++++ b/templates/index.html	(date 1640942071688)
+@@ -202,13 +202,13 @@
+                     for (let i = 0; i < mymusic.length; i++) {
+                         let name = mymusic[i]['name']
+                         let artist = mymusic[i]['artist']
+-                        let url = mymusic[i]['imgUrl']
++                        let img_url = mymusic[i]['imgUrl']
+                         let like = mymusic[i]['like']
+ 
+                         let temp_html = `<div class="card">
+                                             <div class="img_box">
+                                                 <img class="card-img-top"
+-                                                     src="${url}"
++                                                     src="${img_url}"
+                                                      alt="앨범커버이미지">
+                                                 <div class="like_box">
+                                                     <button onclick="likeMusic('${name}')" class="like"></button>
+@@ -291,7 +291,7 @@
+         </div>
+     </div>
+     <!-- popup 버튼 a 태그로 수정함   -->
+-    <a href="" class="popup_btn"></a>
++    <a href="/add" class="popup_btn"></a>
+ <!--    <div onclick="popup()" class="popup_btn"></div>-->
+ </div>
+ </body>
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"9aa718a8-b666-46fa-8448-dc5f443e7eb6\" name=\"Changes\" comment=\"\" />\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"FileTemplateManagerImpl\">\n    <option name=\"RECENT_TEMPLATES\">\n      <list>\n        <option value=\"HTML File\" />\n        <option value=\"Python Script\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n  </component>\n  <component name=\"ProjectId\" id=\"22uhjzZTXGRzni16jUTIxF6kWW1\" />\n  <component name=\"ProjectLevelVcsManager\" settingsEditedManually=\"true\" />\n  <component name=\"ProjectViewState\">\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\">\n    <property name=\"DefaultHtmlFileTemplate\" value=\"HTML File\" />\n    <property name=\"RunOnceActivity.OpenProjectViewOnStart\" value=\"true\" />\n    <property name=\"RunOnceActivity.ShowReadmeOnStart\" value=\"true\" />\n    <property name=\"WebServerToolWindowFactoryState\" value=\"false\" />\n    <property name=\"last_opened_file_path\" value=\"$PROJECT_DIR$\" />\n    <property name=\"settings.editor.selected.configurable\" value=\"com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable\" />\n  </component>\n  <component name=\"RunManager\" selected=\"Python.ToyProject\">\n    <configuration default=\"true\" type=\"DjangoTestsConfigurationType\">\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <envs>\n        <env name=\"PYTHONUNBUFFERED\" value=\"1\" />\n      </envs>\n      <option name=\"SDK_HOME\" value=\"\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"\" />\n      <option name=\"IS_MODULE_SDK\" value=\"false\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <module name=\"\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"TARGET\" value=\"\" />\n      <option name=\"SETTINGS_FILE\" value=\"\" />\n      <option name=\"CUSTOM_SETTINGS\" value=\"false\" />\n      <option name=\"USE_OPTIONS\" value=\"false\" />\n      <option name=\"OPTIONS\" value=\"\" />\n      <method v=\"2\" />\n    </configuration>\n    <configuration default=\"true\" type=\"PyBehaveRunConfigurationType\" factoryName=\"Behave\">\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <option name=\"SDK_HOME\" value=\"\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"\" />\n      <option name=\"IS_MODULE_SDK\" value=\"true\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <module name=\"\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"ADDITIONAL_ARGS\" value=\"\" />\n      <method v=\"2\" />\n    </configuration>\n    <configuration name=\"ToyProject\" type=\"PythonConfigurationType\" factoryName=\"Python\">\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <envs>\n        <env name=\"PYTHONUNBUFFERED\" value=\"1\" />\n      </envs>\n      <option name=\"SDK_HOME\" value=\"/usr/local/bin/python3.8\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"\" />\n      <option name=\"IS_MODULE_SDK\" value=\"false\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <module name=\"\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"SCRIPT_NAME\" value=\"$PROJECT_DIR$/app.py\" />\n      <option name=\"PARAMETERS\" value=\"\" />\n      <option name=\"SHOW_COMMAND_LINE\" value=\"false\" />\n      <option name=\"EMULATE_TERMINAL\" value=\"false\" />\n      <option name=\"MODULE_MODE\" value=\"false\" />\n      <option name=\"REDIRECT_INPUT\" value=\"false\" />\n      <option name=\"INPUT_FILE\" value=\"\" />\n      <method v=\"2\" />\n    </configuration>\n    <configuration name=\"db\" type=\"PythonConfigurationType\" factoryName=\"Python\" temporary=\"true\" nameIsGenerated=\"true\">\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <envs>\n        <env name=\"PYTHONUNBUFFERED\" value=\"1\" />\n      </envs>\n      <option name=\"SDK_HOME\" value=\"/usr/local/bin/python3.8\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"$PROJECT_DIR$\" />\n      <option name=\"IS_MODULE_SDK\" value=\"false\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <module name=\"\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"SCRIPT_NAME\" value=\"$PROJECT_DIR$/db.py\" />\n      <option name=\"PARAMETERS\" value=\"\" />\n      <option name=\"SHOW_COMMAND_LINE\" value=\"false\" />\n      <option name=\"EMULATE_TERMINAL\" value=\"false\" />\n      <option name=\"MODULE_MODE\" value=\"false\" />\n      <option name=\"REDIRECT_INPUT\" value=\"false\" />\n      <option name=\"INPUT_FILE\" value=\"\" />\n      <method v=\"2\" />\n    </configuration>\n    <configuration default=\"true\" type=\"Python.FlaskServer\">\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <option name=\"SDK_HOME\" value=\"\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"\" />\n      <option name=\"IS_MODULE_SDK\" value=\"false\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <module name=\"\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"launchJavascriptDebuger\" value=\"false\" />\n      <method v=\"2\" />\n    </configuration>\n    <configuration default=\"true\" type=\"Tox\" factoryName=\"Tox\">\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <option name=\"SDK_HOME\" value=\"\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"\" />\n      <option name=\"IS_MODULE_SDK\" value=\"false\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <method v=\"2\" />\n    </configuration>\n    <configuration default=\"true\" type=\"docs\" factoryName=\"Docutils task\">\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <option name=\"SDK_HOME\" value=\"\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"\" />\n      <option name=\"IS_MODULE_SDK\" value=\"false\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <module name=\"\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"docutils_input_file\" value=\"\" />\n      <option name=\"docutils_output_file\" value=\"\" />\n      <option name=\"docutils_params\" value=\"\" />\n      <option name=\"docutils_task\" value=\"\" />\n      <option name=\"docutils_open_in_browser\" value=\"false\" />\n      <method v=\"2\" />\n    </configuration>\n    <configuration default=\"true\" type=\"docs\" factoryName=\"Sphinx task\">\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <option name=\"SDK_HOME\" value=\"\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"\" />\n      <option name=\"IS_MODULE_SDK\" value=\"false\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <module name=\"\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"docutils_input_file\" value=\"\" />\n      <option name=\"docutils_output_file\" value=\"\" />\n      <option name=\"docutils_params\" value=\"\" />\n      <option name=\"docutils_task\" value=\"\" />\n      <option name=\"docutils_open_in_browser\" value=\"false\" />\n      <method v=\"2\" />\n    </configuration>\n    <configuration default=\"true\" type=\"tests\" factoryName=\"Doctests\">\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <option name=\"SDK_HOME\" value=\"\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"\" />\n      <option name=\"IS_MODULE_SDK\" value=\"false\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <module name=\"\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"SCRIPT_NAME\" value=\"\" />\n      <option name=\"CLASS_NAME\" value=\"\" />\n      <option name=\"METHOD_NAME\" value=\"\" />\n      <option name=\"FOLDER_NAME\" value=\"\" />\n      <option name=\"TEST_TYPE\" value=\"TEST_SCRIPT\" />\n      <option name=\"PATTERN\" value=\"\" />\n      <option name=\"USE_PATTERN\" value=\"false\" />\n      <method v=\"2\" />\n    </configuration>\n    <recent_temporary>\n      <list>\n        <item itemvalue=\"Python.db\" />\n      </list>\n    </recent_temporary>\n  </component>\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\n  <component name=\"TaskManager\">\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\n      <changelist id=\"9aa718a8-b666-46fa-8448-dc5f443e7eb6\" name=\"Changes\" comment=\"\" />\n      <created>1640693521163</created>\n      <option name=\"number\" value=\"Default\" />\n      <option name=\"presentableId\" value=\"Default\" />\n      <updated>1640693521163</updated>\n      <workItem from=\"1640693525855\" duration=\"12478000\" />\n      <workItem from=\"1640780166234\" duration=\"81000\" />\n      <workItem from=\"1640780254563\" duration=\"233000\" />\n      <workItem from=\"1640780563689\" duration=\"3883000\" />\n      <workItem from=\"1640784495790\" duration=\"575000\" />\n      <workItem from=\"1640785080394\" duration=\"635000\" />\n    </task>\n    <servers />\n  </component>\n  <component name=\"TypeScriptGeneratedFilesManager\">\n    <option name=\"version\" value=\"3\" />\n  </component>\n  <component name=\"Vcs.Log.Tabs.Properties\">\n    <option name=\"TAB_STATES\">\n      <map>\n        <entry key=\"MAIN\">\n          <value>\n            <State />\n          </value>\n        </entry>\n      </map>\n    </option>\n    <option name=\"oldMeFiltersMigrated\" value=\"true\" />\n  </component>\n  <component name=\"com.intellij.coverage.CoverageDataManagerImpl\">\n    <SUITE FILE_PATH=\"coverage/ToyProject$db.coverage\" NAME=\"db Coverage Results\" MODIFIED=\"1640785480951\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"true\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"$PROJECT_DIR$\" />\n    <SUITE FILE_PATH=\"coverage/ToyProject$Flask__app_py_.coverage\" NAME=\"Flask (app.py) Coverage Results\" MODIFIED=\"1640939310436\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"true\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"\" />\n    <SUITE FILE_PATH=\"coverage/ToyProject$ToyProject.coverage\" NAME=\"ToyProject Coverage Results\" MODIFIED=\"1640940304320\" SOURCE_PROVIDER=\"com.intellij.coverage.DefaultCoverageFileProvider\" RUNNER=\"coverage.py\" COVERAGE_BY_TEST_ENABLED=\"true\" COVERAGE_TRACING_ENABLED=\"false\" WORKING_DIRECTORY=\"\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 01e81b5c659a942e936dff0dfe0c3aa202025554)
++++ b/.idea/workspace.xml	(date 1640952939958)
+@@ -1,7 +1,13 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="ChangeListManager">
+-    <list default="true" id="9aa718a8-b666-46fa-8448-dc5f443e7eb6" name="Changes" comment="" />
++    <list default="true" id="9aa718a8-b666-46fa-8448-dc5f443e7eb6" name="Changes" comment="">
++      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/static/js/add.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/js/add.js" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/templates/addMusic.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/addMusic.html" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
++    </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+@@ -33,53 +39,42 @@
+     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+   </component>
+   <component name="RunManager" selected="Python.ToyProject">
+-    <configuration default="true" type="DjangoTestsConfigurationType">
++    <configuration name="ToyProject" type="PythonConfigurationType" factoryName="Python">
+       <option name="INTERPRETER_OPTIONS" value="" />
+       <option name="PARENT_ENVS" value="true" />
+       <envs>
+         <env name="PYTHONUNBUFFERED" value="1" />
+       </envs>
+-      <option name="SDK_HOME" value="" />
++      <option name="SDK_HOME" value="/usr/local/bin/python3.8" />
+       <option name="WORKING_DIRECTORY" value="" />
+       <option name="IS_MODULE_SDK" value="false" />
+       <option name="ADD_CONTENT_ROOTS" value="true" />
+       <option name="ADD_SOURCE_ROOTS" value="true" />
+       <module name="" />
+       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+-      <option name="TARGET" value="" />
+-      <option name="SETTINGS_FILE" value="" />
+-      <option name="CUSTOM_SETTINGS" value="false" />
+-      <option name="USE_OPTIONS" value="false" />
+-      <option name="OPTIONS" value="" />
++      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/app.py" />
++      <option name="PARAMETERS" value="" />
++      <option name="SHOW_COMMAND_LINE" value="false" />
++      <option name="EMULATE_TERMINAL" value="false" />
++      <option name="MODULE_MODE" value="false" />
++      <option name="REDIRECT_INPUT" value="false" />
++      <option name="INPUT_FILE" value="" />
+       <method v="2" />
+     </configuration>
+-    <configuration default="true" type="PyBehaveRunConfigurationType" factoryName="Behave">
+-      <option name="INTERPRETER_OPTIONS" value="" />
+-      <option name="PARENT_ENVS" value="true" />
+-      <option name="SDK_HOME" value="" />
+-      <option name="WORKING_DIRECTORY" value="" />
+-      <option name="IS_MODULE_SDK" value="true" />
+-      <option name="ADD_CONTENT_ROOTS" value="true" />
+-      <option name="ADD_SOURCE_ROOTS" value="true" />
+-      <module name="" />
+-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+-      <option name="ADDITIONAL_ARGS" value="" />
+-      <method v="2" />
+-    </configuration>
+-    <configuration name="ToyProject" type="PythonConfigurationType" factoryName="Python">
++    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
++      <module name="ToyProject" />
+       <option name="INTERPRETER_OPTIONS" value="" />
+       <option name="PARENT_ENVS" value="true" />
+       <envs>
+         <env name="PYTHONUNBUFFERED" value="1" />
+       </envs>
+-      <option name="SDK_HOME" value="/usr/local/bin/python3.8" />
++      <option name="SDK_HOME" value="" />
+       <option name="WORKING_DIRECTORY" value="" />
+       <option name="IS_MODULE_SDK" value="false" />
+       <option name="ADD_CONTENT_ROOTS" value="true" />
+       <option name="ADD_SOURCE_ROOTS" value="true" />
+-      <module name="" />
+       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/app.py" />
++      <option name="SCRIPT_NAME" value="" />
+       <option name="PARAMETERS" value="" />
+       <option name="SHOW_COMMAND_LINE" value="false" />
+       <option name="EMULATE_TERMINAL" value="false" />
+@@ -110,83 +105,6 @@
+       <option name="INPUT_FILE" value="" />
+       <method v="2" />
+     </configuration>
+-    <configuration default="true" type="Python.FlaskServer">
+-      <option name="INTERPRETER_OPTIONS" value="" />
+-      <option name="PARENT_ENVS" value="true" />
+-      <option name="SDK_HOME" value="" />
+-      <option name="WORKING_DIRECTORY" value="" />
+-      <option name="IS_MODULE_SDK" value="false" />
+-      <option name="ADD_CONTENT_ROOTS" value="true" />
+-      <option name="ADD_SOURCE_ROOTS" value="true" />
+-      <module name="" />
+-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+-      <option name="launchJavascriptDebuger" value="false" />
+-      <method v="2" />
+-    </configuration>
+-    <configuration default="true" type="Tox" factoryName="Tox">
+-      <option name="INTERPRETER_OPTIONS" value="" />
+-      <option name="PARENT_ENVS" value="true" />
+-      <option name="SDK_HOME" value="" />
+-      <option name="WORKING_DIRECTORY" value="" />
+-      <option name="IS_MODULE_SDK" value="false" />
+-      <option name="ADD_CONTENT_ROOTS" value="true" />
+-      <option name="ADD_SOURCE_ROOTS" value="true" />
+-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+-      <method v="2" />
+-    </configuration>
+-    <configuration default="true" type="docs" factoryName="Docutils task">
+-      <option name="INTERPRETER_OPTIONS" value="" />
+-      <option name="PARENT_ENVS" value="true" />
+-      <option name="SDK_HOME" value="" />
+-      <option name="WORKING_DIRECTORY" value="" />
+-      <option name="IS_MODULE_SDK" value="false" />
+-      <option name="ADD_CONTENT_ROOTS" value="true" />
+-      <option name="ADD_SOURCE_ROOTS" value="true" />
+-      <module name="" />
+-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+-      <option name="docutils_input_file" value="" />
+-      <option name="docutils_output_file" value="" />
+-      <option name="docutils_params" value="" />
+-      <option name="docutils_task" value="" />
+-      <option name="docutils_open_in_browser" value="false" />
+-      <method v="2" />
+-    </configuration>
+-    <configuration default="true" type="docs" factoryName="Sphinx task">
+-      <option name="INTERPRETER_OPTIONS" value="" />
+-      <option name="PARENT_ENVS" value="true" />
+-      <option name="SDK_HOME" value="" />
+-      <option name="WORKING_DIRECTORY" value="" />
+-      <option name="IS_MODULE_SDK" value="false" />
+-      <option name="ADD_CONTENT_ROOTS" value="true" />
+-      <option name="ADD_SOURCE_ROOTS" value="true" />
+-      <module name="" />
+-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+-      <option name="docutils_input_file" value="" />
+-      <option name="docutils_output_file" value="" />
+-      <option name="docutils_params" value="" />
+-      <option name="docutils_task" value="" />
+-      <option name="docutils_open_in_browser" value="false" />
+-      <method v="2" />
+-    </configuration>
+-    <configuration default="true" type="tests" factoryName="Doctests">
+-      <option name="INTERPRETER_OPTIONS" value="" />
+-      <option name="PARENT_ENVS" value="true" />
+-      <option name="SDK_HOME" value="" />
+-      <option name="WORKING_DIRECTORY" value="" />
+-      <option name="IS_MODULE_SDK" value="false" />
+-      <option name="ADD_CONTENT_ROOTS" value="true" />
+-      <option name="ADD_SOURCE_ROOTS" value="true" />
+-      <module name="" />
+-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+-      <option name="SCRIPT_NAME" value="" />
+-      <option name="CLASS_NAME" value="" />
+-      <option name="METHOD_NAME" value="" />
+-      <option name="FOLDER_NAME" value="" />
+-      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+-      <option name="PATTERN" value="" />
+-      <option name="USE_PATTERN" value="false" />
+-      <method v="2" />
+-    </configuration>
+     <recent_temporary>
+       <list>
+         <item itemvalue="Python.db" />
+@@ -207,6 +125,8 @@
+       <workItem from="1640780563689" duration="3883000" />
+       <workItem from="1640784495790" duration="575000" />
+       <workItem from="1640785080394" duration="635000" />
++      <workItem from="1640943370170" duration="125000" />
++      <workItem from="1640943719818" duration="1169000" />
+     </task>
+     <servers />
+   </component>
+@@ -228,6 +148,6 @@
+   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+     <SUITE FILE_PATH="coverage/ToyProject$db.coverage" NAME="db Coverage Results" MODIFIED="1640785480951" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+     <SUITE FILE_PATH="coverage/ToyProject$Flask__app_py_.coverage" NAME="Flask (app.py) Coverage Results" MODIFIED="1640939310436" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
+-    <SUITE FILE_PATH="coverage/ToyProject$ToyProject.coverage" NAME="ToyProject Coverage Results" MODIFIED="1640940304320" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
++    <SUITE FILE_PATH="coverage/ToyProject$ToyProject.coverage" NAME="ToyProject Coverage Results" MODIFIED="1640952848502" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
+   </component>
+ </project>
+\ No newline at end of file
+Index: static/js/add.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>function addMusic(){\n    $.ajax({\n        type:'POST',\n        url :'/add/music',\n        data:{musicUrl: $('#music-url').val()},\n        success: function (response){\n            $('#music-box').empty();\n            alert(response['msg']);\n            showMusic(response['id']);\n            //window.location.reload();\n        }\n    })\n}\n\n\nfunction showMusic(id){\n    $.ajax({\n        type:\"GET\",\n        url:\"/add/music/\" + id,\n        data:{},\n        success: function(response){          \n            let img_url = response['url'];\n            let name = response['name'];\n            let artist = response['artist'];\n            let temp_html = `<div class=\"card\">\n                                <div class=\"card-content\">\n                                    <div class=\"media\">\n                                        <div class=\"media-left\">\n                                            <figure class=\"image is-48x48\">\n                                                <img\n                                                        src=${img_url}\n                                                        alt=\"Placeholder image\"\n                                                />\n                                            </figure>\n                                        </div>\n                                        <div class=\"media-content\">\n                                            <a href=\"#\" target=\"_blank\" class=\"star-name title is-4\">${artist}</a>\n                                            <p class=\"subtitle is-6\">${name}</p>\n                                        </div>\n                                    </div>\n                                </div>\n                                <footer class=\"card-footer\">\n                                </footer>\n                            </div>`\n            $('#music-box').append(temp_html);\n        }\n    }\n)}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/static/js/add.js b/static/js/add.js
+--- a/static/js/add.js	(revision 01e81b5c659a942e936dff0dfe0c3aa202025554)
++++ b/static/js/add.js	(date 1640941744589)
+@@ -19,7 +19,7 @@
+         url:"/add/music/" + id,
+         data:{},
+         success: function(response){          
+-            let img_url = response['url'];
++            let img_url = response['imgUrl'];
+             let name = response['name'];
+             let artist = response['artist'];
+             let temp_html = `<div class="card">

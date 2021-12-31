@@ -23,12 +23,18 @@ def home():
 def detail():
     return render_template('detail.html')
 
+#등록 화면 보여주기
+@app.route('/add')
+def add():
+    #return "this is home"
+    return render_template('addMusic.html')
+
 
 # API 역할을 하는 부분
 @app.route('/api/list', methods=['GET'])
 def show_music():
     music = list(db.mymusic.find({}, {'_id': False}).sort('like',-1))
-    return jsonify({'musics': music })
+    return jsonify({'musics': music})
 
 
 @app.route('/api/like', methods=['POST'])
@@ -64,12 +70,6 @@ def read_comment():
     comments = list(db.toy_comment.find({}, {'_id': False}))
     return jsonify({'all_comments': comments})
 
-
- 
-@app.route('/add')
-def add():
-    #return "this is home"
-    return render_template('addMusic.html')
 
 
 #api
